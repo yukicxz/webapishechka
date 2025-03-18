@@ -20,7 +20,7 @@ namespace Magazine.Core.Services
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        Product Remove(int id);
+        Product Remove(Guid id);
         /// <summary>
         /// edit element in db
         /// </summary>
@@ -32,6 +32,6 @@ namespace Magazine.Core.Services
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        Product Search(int id);
+        Product Search(Guid id);
     }
 }
