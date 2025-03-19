@@ -28,10 +28,10 @@ namespace Magazine.Core.Models
         /// <summary>
         /// product image
         /// </summary>
-        public byte[] Image { get; set; }
+        public string Image { get; set; }
 
         public Product() { }
-        public Product(string name, string definition, decimal price, byte[] image)
+        public Product(string name, string definition, decimal price, string image)
         {
             Id = Guid.NewGuid();
             Name = name;
