@@ -48,8 +48,8 @@ namespace Controllers
                 _logger.LogWarning($"Продукт не добавлен");
                 return BadRequest("Продукт не добавлен");
             }
-            _logger.LogInformation($"Добавлен продукт: {product.Name}");
-            return Ok("Добавлен продукт");
+            _logger.LogInformation($"Добавлен продукт: {product.Name}, c id: {product.Id}");
+            return Ok($"Добавлен продукт: {product.Name}, c id: {product.Id}");
         }
         [HttpPut]
         public IActionResult EditProduct([FromBody] Product product)

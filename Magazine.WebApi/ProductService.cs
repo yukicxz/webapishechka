@@ -39,21 +39,28 @@ namespace Magazine.WebApi
 
         public Product Add(Product product)
         {
+            if (product.Id == Guid.Empty)
+            {
+                product.Id = Guid.NewGuid();
+            }
+
             using var connection = new SqliteConnection(_connection);
             connection.Open();
             var command = connection.CreateCommand();
             command.CommandText = @"
-            INSERT INTO Products (Id, Definition, Name, Price, Image)
-            VALUES ($id, $definition, $name, $price, $image);
-            ";
+        INSERT INTO Products (Id, Definition, Name, Price, Image)
+        VALUES ($id, $definition, $name, $price, $image);
+    ";
             command.Parameters.AddWithValue("$id", product.Id);
             command.Parameters.AddWithValue("$definition", product.Definition);
             command.Parameters.AddWithValue("$name", product.Name);
             command.Parameters.AddWithValue("$price", product.Price);
             command.Parameters.AddWithValue("$image", product.Image);
             command.ExecuteNonQuery();
+
             return product;
         }
+
 
         public Product Remove(Guid productID)
         {
