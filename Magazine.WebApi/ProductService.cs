@@ -16,40 +16,51 @@ namespace Magazine.WebApi
 
         }
 
-        private void initDatabase() 
+        private void initDatabase()
         {
             using var connection = new SqliteConnection(_connection);
             connection.Open();
+            Console.WriteLine("Database opened successfully."); // Debug
+
             var command = connection.CreateCommand();
             command.CommandText =
             @"
-                CREATE TABLE IF NOT EXIST Products(
-                Id TEXT PRIMARY KEY,
-                Definition TEXT NOT NULL,
-                Name TEXT NOT NULL,
-                Price REAL NOT NULL,
-                Image BLOB
-            );";
+        CREATE TABLE IF NOT EXISTS Products(
+        Id TEXT PRIMARY KEY,
+        Definition TEXT NOT NULL,
+        Name TEXT NOT NULL,
+        Price REAL NOT NULL,
+        Image BLOB
+    );";
+
             command.ExecuteNonQuery();
+            Console.WriteLine("Table check/creation completed."); // Debug
         }
 
         public Product Add(Product product)
         {
+            if (product.Id == Guid.Empty)
+            {
+                product.Id = Guid.NewGuid();
+            }
+
             using var connection = new SqliteConnection(_connection);
             connection.Open();
             var command = connection.CreateCommand();
             command.CommandText = @"
-            INSERT INTO Products (Id, Definition, Name, Price, Image)
-            VALUES ($id, $definition, $name, $price, $image);
-            ";
+        INSERT INTO Products (Id, Definition, Name, Price, Image)
+        VALUES ($id, $definition, $name, $price, $image);
+    ";
             command.Parameters.AddWithValue("$id", product.Id);
             command.Parameters.AddWithValue("$definition", product.Definition);
             command.Parameters.AddWithValue("$name", product.Name);
             command.Parameters.AddWithValue("$price", product.Price);
             command.Parameters.AddWithValue("$image", product.Image);
             command.ExecuteNonQuery();
+
             return product;
         }
+
 
         public Product Remove(Guid productID)
         {
@@ -106,7 +117,7 @@ namespace Magazine.WebApi
                     reader.GetString(1),
                     reader.GetString(2),
                     reader.GetDecimal(3),
-                    (byte[])reader["ImageData"] // Проверка на NULL
+                    reader.GetString(4)
                 )
                 {
                     Id = reader.GetGuid(0) // Устанавливаем Id отдельно, так как конструктор создаёт новый Id

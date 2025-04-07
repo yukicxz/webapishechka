@@ -3,6 +3,7 @@ using Magazine.Core.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
+using System.Reflection.Metadata.Ecma335;
 using System.Threading.Tasks;
 
 namespace Controllers
@@ -22,68 +23,69 @@ namespace Controllers
 
         //Получить продукт по Id
         [HttpGet("{id}")]
-        public string GetProductById(Guid id)
+        public string GetProductID(Guid id)
         {
-            _logger.LogInformation($"Поиск продукта с Id: {id}.");
+            _logger.LogInformation($"Поиск продукта по id:{id}");
             var product = _productService.Search(id);
 
             if (product == null)
             {
-                _logger.LogWarning($"Продукт с ID {id} не найден.");
-                return "Не найден";
+                _logger.LogWarning($"Продукт не найден");
+                return "Продукт не найден";
             }
-
+            _logger.LogInformation($"Продукт найден");
             return "Найден";
         }
 
         //Создать новый продукт
         [HttpPost]
-        public IActionResult CreateProduct([FromBody] Product product)
+        public IActionResult AddProduct([FromBody]Product product)
         {
             if (product == null)
             {
-                return BadRequest("Продукт не может быть null.");
+                _logger.LogWarning($"Продукт не добавлен");
+                return BadRequest("Продукт не добавлен");
             }
-
-            var createdProduct = _productService.Add(product);
-            if (createdProduct == null)
+            _logger.LogInformation($"Добавление продукта {product.Name}");
+            var AddedProduct = _productService.Add(product);
+            if(AddedProduct == null)
             {
-                _logger.LogWarning("Не удалось добавить товар");
-                return BadRequest("Не удалось добавить товар");
+                _logger.LogWarning($"Продукт не добавлен");
+                return BadRequest("Продукт не добавлен");
             }
-
-            _logger.LogInformation($"Созданный продукт: {product.Name}");
-            return Ok("Продукт создан");
+            _logger.LogInformation($"Добавлен продукт: {product.Name}, c id: {product.Id}");
+            return Ok($"Добавлен продукт: {product.Name}, c id: {product.Id}");
         }
 
 
         //Обновить существующий продукт
         [HttpPut]
-        public string EditProduct(Product product)
+        public IActionResult EditProduct([FromBody] Product product)
         {
-            _logger.LogInformation($"Изменение товара: {product.Id}");
-            if (_productService.Edit(product) != null)
+            _logger.LogInformation($"Изменение продукта {product.Name}");
+            var EditedProduct = _productService.Edit(product);
+            if (EditedProduct == null)
             {
-                _logger.LogWarning($"Обновлен продукт: {product.Name},Описание:{product.Definition},цена: {product.Price}");
-                return $"Обновлен продукт: {product.Name},Описание:{product.Definition},цена: {product.Price}";
+                _logger.LogWarning($"Продукт не изменен");
+                return BadRequest("Продукт не изменен");
             }
-            return "Продукт не найден";
+            _logger.LogInformation($"Изменен продукт: {product.Name},Описание:{product.Definition},цена: {product.Price}");
+            return Ok($"Изменен продукт: {product.Name},Описание:{product.Definition},цена: {product.Price}");
         }
 
         //Удалить продукт
         [HttpDelete("{id}")]
-        public string DeleteProduct(Guid id)
+        public IActionResult RemoveProduct(Guid id)
         {
-            _logger.LogInformation($"Удаление продукта {id}.");
-            var result = _productService.Remove(id);
-
-            if (result != null)
+            _logger.LogInformation($"Удаление продукта по id:{id}");
+            var RemovedProduct = _productService.Remove(id);
+            if (RemovedProduct == null)
             {
-                _logger.LogWarning($"Не удалось удалить продукт с ID: {id}.");
-                return "Не удалось удалить";
+                _logger.LogWarning($"Продукт не удален");
+                return BadRequest("Продукт не удален");
             }
-
-            return "Удалено";
+            _logger.LogInformation($"Удален продукт: {RemovedProduct.Name}");
+            return Ok("Удален продукт");
         }
     }
 }
