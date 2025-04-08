@@ -12,16 +12,19 @@ namespace Magazine.WebApi
         private readonly string _connection;
         private readonly string _filePath;
         private readonly IConfiguration _config;
+        private readonly Dictionary<Guid, Product> _products = new();
+        private readonly Mutex _mutex = new();
         public ProductService(IConfiguration config)
         {
             _config = config;
             _connection = config.GetConnectionString("sqlite");
-            _filePath = config["ProductFilePath"] ?? "products.json";
-            initDatabase();
+            _filePath = config["DataBasePath"] ?? "database.txt";
+            InitFromFile();
+            InitDatabase();
 
         }
 
-        private void initDatabase()
+        private void InitDatabase()
         {
             using var connection = new SqliteConnection(_connection);
             connection.Open();
@@ -30,18 +33,17 @@ namespace Magazine.WebApi
             var command = connection.CreateCommand();
             command.CommandText =
             @"
-        CREATE TABLE IF NOT EXISTS Products(
-        Id TEXT PRIMARY KEY,
-        Definition TEXT NOT NULL,
-        Name TEXT NOT NULL,
-        Price REAL NOT NULL,
-        Image BLOB
-    );";
+            CREATE TABLE IF NOT EXISTS Products(
+            Id TEXT PRIMARY KEY,
+            Definition TEXT NOT NULL,
+            Name TEXT NOT NULL,
+            Price REAL NOT NULL,
+            Image BLOB
+            );";
 
             command.ExecuteNonQuery();
             Console.WriteLine("Table check/creation completed."); // Debug
         }
-
         public Product Add(Product product)
         {
             if (product.Id == Guid.Empty)
@@ -65,8 +67,6 @@ namespace Magazine.WebApi
 
             return product;
         }
-
-
         public Product Remove(Guid productID)
         {
             Product RemoveProduct = Search(productID);
@@ -129,6 +129,32 @@ namespace Magazine.WebApi
                 };
             }
             return null;
+        }
+
+        private void InitFromFile()
+        {
+            if (!File.Exists(_filePath))
+            {
+                Console.WriteLine("Product file not found. Creating a new file.");
+                return;
+            }
+            try
+            {
+                var json = File.ReadAllText(_filePath);
+                var deserializedProducts = JsonSerializer.Deserialize<Dictionary<Guid, Product>>(json);
+                if (deserializedProducts != null)
+                {
+                    foreach (var product in deserializedProducts)
+                    {
+                        _products[product.Key] = product.Value;
+                    }
+                    Console.WriteLine("Продукты загружены из файла.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Ошибка загрузки из файла: " + ex.Message);
+            }
         }
 
     }
