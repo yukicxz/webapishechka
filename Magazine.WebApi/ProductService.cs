@@ -50,58 +50,90 @@ namespace Magazine.WebApi
             {
                 product.Id = Guid.NewGuid();
             }
-
-            using var connection = new SqliteConnection(_connection);
-            connection.Open();
-            var command = connection.CreateCommand();
-            command.CommandText = @"
-        INSERT INTO Products (Id, Definition, Name, Price, Image)
-        VALUES ($id, $definition, $name, $price, $image);
-    ";
-            command.Parameters.AddWithValue("$id", product.Id);
-            command.Parameters.AddWithValue("$definition", product.Definition);
-            command.Parameters.AddWithValue("$name", product.Name);
-            command.Parameters.AddWithValue("$price", product.Price);
-            command.Parameters.AddWithValue("$image", product.Image);
-            command.ExecuteNonQuery();
-
-            return product;
-        }
-        public Product Remove(Guid productID)
-        {
-            Product RemoveProduct = Search(productID);
-            if (RemoveProduct != null)
+            _mutex.WaitOne();
+            try
             {
                 using var connection = new SqliteConnection(_connection);
                 connection.Open();
                 var command = connection.CreateCommand();
                 command.CommandText = @"
+                INSERT INTO Products (Id, Definition, Name, Price, Image)
+                VALUES ($id, $definition, $name, $price, $image);
+                ";
+                command.Parameters.AddWithValue("$id", product.Id);
+                command.Parameters.AddWithValue("$definition", product.Definition);
+                command.Parameters.AddWithValue("$name", product.Name);
+                command.Parameters.AddWithValue("$price", product.Price);
+                command.Parameters.AddWithValue("$image", product.Image);
+                command.ExecuteNonQuery();
+                _products[product.Id] = product; // Добавляем продукт в словарь
+                
+            }
+            finally
+            {
+                _mutex.ReleaseMutex();
+            }
+            return product;
+        }
+
+
+        public Product Remove(Guid productID)
+        {
+            Product RemoveProduct = null;
+            _mutex.WaitOne();
+            try
+            {
+                RemoveProduct = Search(productID);
+                if (RemoveProduct != null)
+                {
+                    using var connection = new SqliteConnection(_connection);
+                    connection.Open();
+                    var command = connection.CreateCommand();
+                    command.CommandText = @"
                 DELETE FROM Products WHERE Id = $id;
                 ";
-                command.Parameters.AddWithValue("$id", productID);
-                command.ExecuteNonQuery();
+                    command.Parameters.AddWithValue("$id", productID);
+                    command.ExecuteNonQuery();
+                    _products.Remove(productID); // Удаляем продукт из словаря
+                    
+                }
+            }
+            finally
+            {
+                _mutex.ReleaseMutex();
             }
             return RemoveProduct;
         }
 
         public Product Edit(Product product)
         {
-            using var connection = new SqliteConnection(_connection);
-            connection.Open();
-            var command = connection.CreateCommand();
-            command.CommandText = @"
+            _mutex.WaitOne();
+            try
+            {
+                using var connection = new SqliteConnection(_connection);
+                connection.Open();
+                var command = connection.CreateCommand();
+                command.CommandText = @"
             UPDATE Products SET Definition = $definition,
             Name = $name,
             Price = $price,
             Image = $image
             WHERE Id = $id;
             ";
-            command.Parameters.AddWithValue("$id", product.Id);
-            command.Parameters.AddWithValue("$definition", product.Definition);
-            command.Parameters.AddWithValue("$name", product.Name);
-            command.Parameters.AddWithValue("$price", product.Price);
-            command.Parameters.AddWithValue("$image", product.Image);
-            command.ExecuteNonQuery();
+                command.Parameters.AddWithValue("$id", product.Id);
+                command.Parameters.AddWithValue("$definition", product.Definition);
+                command.Parameters.AddWithValue("$name", product.Name);
+                command.Parameters.AddWithValue("$price", product.Price);
+                command.Parameters.AddWithValue("$image", product.Image);
+                command.ExecuteNonQuery();
+
+                _products[product.Id] = product; // Обновляем продукт в словаре 
+                
+            }
+            finally
+            {
+                _mutex.ReleaseMutex();
+            }
             return product;
         }
 
