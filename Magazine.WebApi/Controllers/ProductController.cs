@@ -14,11 +14,12 @@ namespace Controllers
     {
         private readonly ILogger<ProductController> _logger;
         private readonly IProductService _productService;
-
-        public ProductController(ILogger<ProductController> logger, IProductService productService)
+        private readonly string _filePath;
+        public ProductController(ILogger<ProductController> logger, IProductService productService, IConfiguration config)
         {
             _logger = logger;
             _productService = productService;
+            _filePath = config["DataBaseFilePath"];
         }
 
         //Получить продукт по Id

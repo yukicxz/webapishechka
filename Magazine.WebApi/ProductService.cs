@@ -3,15 +3,20 @@ using Magazine.Core.Services;
 using Magazine.Core.Models;
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
+using System.Threading;
 namespace Magazine.WebApi
 {
     public class ProductService : IProductService
     {
         private readonly string _connection;
-
+        private readonly string _filePath;
+        private readonly IConfiguration _config;
         public ProductService(IConfiguration config)
         {
+            _config = config;
             _connection = config.GetConnectionString("sqlite");
+            _filePath = config["ProductFilePath"] ?? "products.json";
             initDatabase();
 
         }
@@ -125,5 +130,6 @@ namespace Magazine.WebApi
             }
             return null;
         }
+
     }
 }

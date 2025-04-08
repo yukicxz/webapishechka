@@ -11,7 +11,7 @@ builder.Services.AddSwaggerGen();
 // Получаем строку подключения из конфигурации
 var configuration = builder.Configuration;
 builder.Services.AddSingleton<IConfiguration>(configuration);
-builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddSingleton<IProductService, ProductService>();
 
 var app = builder.Build();
 
