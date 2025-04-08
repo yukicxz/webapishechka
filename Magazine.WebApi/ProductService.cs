@@ -67,7 +67,7 @@ namespace Magazine.WebApi
                 command.Parameters.AddWithValue("$image", product.Image);
                 command.ExecuteNonQuery();
                 _products[product.Id] = product; // Добавляем продукт в словарь
-                
+                WriteToFile();
             }
             finally
             {
@@ -95,7 +95,7 @@ namespace Magazine.WebApi
                     command.Parameters.AddWithValue("$id", productID);
                     command.ExecuteNonQuery();
                     _products.Remove(productID); // Удаляем продукт из словаря
-                    
+                    WriteToFile();
                 }
             }
             finally
@@ -128,7 +128,7 @@ namespace Magazine.WebApi
                 command.ExecuteNonQuery();
 
                 _products[product.Id] = product; // Обновляем продукт в словаре 
-                
+                WriteToFile();
             }
             finally
             {
@@ -188,6 +188,17 @@ namespace Magazine.WebApi
                 Console.WriteLine("Ошибка загрузки из файла: " + ex.Message);
             }
         }
-
+        private void WriteToFile()
+        {
+            try
+            {
+                var text = JsonSerializer.Serialize(_products);
+                File.WriteAllText(_filePath, text);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Ошибка записи в файл: " + ex.Message);
+            }
+        }
     }
 }
