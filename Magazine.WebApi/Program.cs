@@ -11,6 +11,8 @@ builder.Services.AddSwaggerGen();
 // Получаем строку подключения из конфигурации
 var configuration = builder.Configuration;
 builder.Services.AddSingleton<IConfiguration>(configuration);
+
+// Исправление: Убедитесь, что ProductService реализует интерфейс IProductService
 builder.Services.AddSingleton<IProductService, ProductService>();
 
 var app = builder.Build();

@@ -14,13 +14,13 @@ namespace Magazine.Core.Models
         /// </summary>
         public Guid Id { get; set; }
         /// <summary>
-        /// Product name
-        /// </summary>
-        public string Name { get; set; }
-        /// <summary>
         /// definition of product
         /// </summary>
         public string Definition { get; set; }
+        /// <summary>
+        /// Product name
+        /// </summary>
+        public string Name { get; set; }
         /// <summary>
         /// Recommend price for product
         /// </summary>
@@ -31,11 +31,11 @@ namespace Magazine.Core.Models
         public string Image { get; set; }
 
         public Product() { }
-        public Product(string name, string definition, decimal price, string image)
+        public Product(string definition, string name, decimal price, string image)
         {
             Id = Guid.NewGuid();
-            Name = name;
             Definition = definition;
+            Name = name;
             Price = price;
             Image = image;
         }

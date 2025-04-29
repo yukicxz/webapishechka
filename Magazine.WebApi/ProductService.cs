@@ -24,12 +24,13 @@ namespace Magazine.WebApi
 
         }
 
-        private void InitDatabase()
+        public void InitDatabase()
         {
             using var connection = new SqliteConnection(_connection);
             connection.Open();
             Console.WriteLine("Database opened successfully."); // Debug
 
+            // Создание таблицы
             var command = connection.CreateCommand();
             command.CommandText =
             @"
@@ -39,11 +40,19 @@ namespace Magazine.WebApi
             Name TEXT NOT NULL,
             Price REAL NOT NULL,
             Image BLOB
-            );";
-
+            );";    
             command.ExecuteNonQuery();
             Console.WriteLine("Table check/creation completed."); // Debug
+
+            // Создание индекса (необязательный, так как PRIMARY KEY уже индекс, но добавляем по заданию)
+            var indexCommand = connection.CreateCommand();
+            indexCommand.CommandText = @"
+            CREATE INDEX IF NOT EXISTS idx_products_id ON Products(Id);
+            ";
+            indexCommand.ExecuteNonQuery();
+            Console.WriteLine("Index creation completed."); // Debug
         }
+
         public Product Add(Product product)
         {
             if (product.Id == Guid.Empty)
@@ -61,10 +70,11 @@ namespace Magazine.WebApi
                 VALUES ($id, $definition, $name, $price, $image);
                 ";
                 command.Parameters.AddWithValue("$id", product.Id);
-                command.Parameters.AddWithValue("$definition", product.Definition);
-                command.Parameters.AddWithValue("$name", product.Name);
+                command.Parameters.AddWithValue("$definition", product.Definition); // Должно быть Definition
+                command.Parameters.AddWithValue("$name", product.Name); // Должно быть Name
                 command.Parameters.AddWithValue("$price", product.Price);
                 command.Parameters.AddWithValue("$image", product.Image);
+
                 command.ExecuteNonQuery();
                 _products[product.Id] = product; // Добавляем продукт в словарь
                 WriteToFile();
