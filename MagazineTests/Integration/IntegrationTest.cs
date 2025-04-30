@@ -32,6 +32,7 @@ namespace Magazine.IntegrationTests
                 .Build();
 
             _service = new ProductService(config);
+            _service.InitDatabase(); // обязательно вызвать вручную!
             _controller = new ProductController(NullLogger<ProductController>.Instance, _service, config);
         }
 

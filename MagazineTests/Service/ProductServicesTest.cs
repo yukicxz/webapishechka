@@ -33,6 +33,7 @@ namespace Magazine.ServiceTests
                 .Build();
 
             _service = new ProductService(config);
+            _service.InitDatabase();
         }
 
         [Test]
@@ -134,6 +135,7 @@ namespace Magazine.ServiceTests
     };
             var config = new ConfigurationBuilder().AddInMemoryCollection(configValues).Build();
             var newService = new ProductService(config);
+            newService.InitDatabase();
 
             var result = newService.Search(added.Id);
             Assert.That(result, Is.Not.Null);

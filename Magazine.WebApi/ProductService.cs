@@ -28,6 +28,7 @@ namespace Magazine.WebApi
             _db.InitDatabase();
         }
 
+
         public Product Add(Product product)
         {
             if (product.Id == Guid.Empty)
