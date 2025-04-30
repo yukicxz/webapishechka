@@ -32,6 +32,6 @@ namespace Magazine.Core.Services
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        Product Search(Guid id);
+        Product? Search(Guid id);
     }
 }

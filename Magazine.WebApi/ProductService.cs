@@ -1,72 +1,43 @@
-﻿using Microsoft.Data.Sqlite;
+﻿using Magazine.Core.Models;
 using Magazine.Core.Services;
-using Magazine.Core.Models;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text.Json;
 using System.Threading;
+
 namespace Magazine.WebApi
 {
     public class ProductService : IProductService
     {
-        private readonly string _connection;
         private readonly string _filePath;
         private readonly IConfiguration _config;
         private readonly Dictionary<Guid, Product> _products = new();
         private readonly Mutex _mutex = new();
+        private readonly DataBase _db;
+
         public ProductService(IConfiguration config)
         {
             _config = config;
-            _connection = config.GetConnectionString("sqlite");
             _filePath = config["DataBasePath"] ?? "database.txt";
+            var connectionString = config.GetConnectionString("sqlite") ?? "Data Source=products.db";
+            _db = new DataBase(connectionString);
+
             InitFromFile();
-            InitDatabase();
-
+            _db.InitDatabase();
         }
 
-        private void InitDatabase()
-        {
-            using var connection = new SqliteConnection(_connection);
-            connection.Open();
-            Console.WriteLine("Database opened successfully."); // Debug
-
-            var command = connection.CreateCommand();
-            command.CommandText =
-            @"
-            CREATE TABLE IF NOT EXISTS Products(
-            Id TEXT PRIMARY KEY,
-            Definition TEXT NOT NULL,
-            Name TEXT NOT NULL,
-            Price REAL NOT NULL,
-            Image BLOB
-            );";
-
-            command.ExecuteNonQuery();
-            Console.WriteLine("Table check/creation completed."); // Debug
-        }
         public Product Add(Product product)
         {
             if (product.Id == Guid.Empty)
-            {
                 product.Id = Guid.NewGuid();
-            }
+
             _mutex.WaitOne();
             try
             {
-                using var connection = new SqliteConnection(_connection);
-                connection.Open();
-                var command = connection.CreateCommand();
-                command.CommandText = @"
-                INSERT INTO Products (Id, Definition, Name, Price, Image)
-                VALUES ($id, $definition, $name, $price, $image);
-                ";
-                command.Parameters.AddWithValue("$id", product.Id);
-                command.Parameters.AddWithValue("$definition", product.Definition);
-                command.Parameters.AddWithValue("$name", product.Name);
-                command.Parameters.AddWithValue("$price", product.Price);
-                command.Parameters.AddWithValue("$image", product.Image);
-                command.ExecuteNonQuery();
-                _products[product.Id] = product; // Добавляем продукт в словарь
+                _db.InsertProduct(product);
+                _products[product.Id] = product;
                 WriteToFile();
             }
             finally
@@ -76,25 +47,17 @@ namespace Magazine.WebApi
             return product;
         }
 
-
-        public Product Remove(Guid productID)
+        public Product? Remove(Guid productID)
         {
-            Product RemoveProduct = null;
+            Product? toRemove = null;
             _mutex.WaitOne();
             try
             {
-                RemoveProduct = Search(productID);
-                if (RemoveProduct != null)
+                toRemove = Search(productID);
+                if (toRemove != null)
                 {
-                    using var connection = new SqliteConnection(_connection);
-                    connection.Open();
-                    var command = connection.CreateCommand();
-                    command.CommandText = @"
-                DELETE FROM Products WHERE Id = $id;
-                ";
-                    command.Parameters.AddWithValue("$id", productID);
-                    command.ExecuteNonQuery();
-                    _products.Remove(productID); // Удаляем продукт из словаря
+                    _db.DeleteProduct(productID);
+                    _products.Remove(productID);
                     WriteToFile();
                 }
             }
@@ -102,7 +65,7 @@ namespace Magazine.WebApi
             {
                 _mutex.ReleaseMutex();
             }
-            return RemoveProduct;
+            return toRemove;
         }
 
         public Product Edit(Product product)
@@ -110,24 +73,8 @@ namespace Magazine.WebApi
             _mutex.WaitOne();
             try
             {
-                using var connection = new SqliteConnection(_connection);
-                connection.Open();
-                var command = connection.CreateCommand();
-                command.CommandText = @"
-            UPDATE Products SET Definition = $definition,
-            Name = $name,
-            Price = $price,
-            Image = $image
-            WHERE Id = $id;
-            ";
-                command.Parameters.AddWithValue("$id", product.Id);
-                command.Parameters.AddWithValue("$definition", product.Definition);
-                command.Parameters.AddWithValue("$name", product.Name);
-                command.Parameters.AddWithValue("$price", product.Price);
-                command.Parameters.AddWithValue("$image", product.Image);
-                command.ExecuteNonQuery();
-
-                _products[product.Id] = product; // Обновляем продукт в словаре 
+                _db.UpdateProduct(product);
+                _products[product.Id] = product;
                 WriteToFile();
             }
             finally
@@ -137,30 +84,9 @@ namespace Magazine.WebApi
             return product;
         }
 
-        public Product Search(Guid productID)
+        public Product? Search(Guid productID)
         {
-            using var connection = new SqliteConnection(_connection);
-            connection.Open();
-            var command = connection.CreateCommand();
-            command.CommandText = @"
-                SELECT Id, Definition, Name, Price, Image FROM Products WHERE Id = $id;
-                ";
-            command.Parameters.AddWithValue("$id", productID);
-            using var reader = command.ExecuteReader();
-            if (reader.Read())
-            {
-                return new Product
-                (
-                    reader.GetString(1),
-                    reader.GetString(2),
-                    reader.GetDecimal(3),
-                    reader.GetString(4)
-                )
-                {
-                    Id = reader.GetGuid(0) // Устанавливаем Id отдельно, так как конструктор создаёт новый Id
-                };
-            }
-            return null;
+            return _db.SelectProduct(productID);
         }
 
         private void InitFromFile()
@@ -188,6 +114,7 @@ namespace Magazine.WebApi
                 Console.WriteLine("Ошибка загрузки из файла: " + ex.Message);
             }
         }
+
         private void WriteToFile()
         {
             try
